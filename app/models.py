@@ -20,3 +20,14 @@ class NewsItem(Base):
 
     def __repr__(self):
         return f"<NewsItem(title='{self.title[:30]}...', source='{self.source}')>"
+
+    def to_dict(self):
+        return {
+            "id": str(self.id),
+            "title": self.title,
+            "url": self.url,
+            "summary": self.summary,
+            "source": self.source,
+            "published_at": self.published_at.isoformat(),
+            "raw_text": self.raw_text
+        }
