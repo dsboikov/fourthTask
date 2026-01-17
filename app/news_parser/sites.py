@@ -38,7 +38,7 @@ class NewsParser:
 
             items.append({
                 "title": entry.get("title", "").strip(),
-                "url": entry.get("link", ""),
+                "url": entry.get("link", "").strip(),
                 "summary": entry.get("summary", entry.get("description", "")),
                 "source": source,
                 "published_at": published_at
