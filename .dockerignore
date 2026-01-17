@@ -1,0 +1,25 @@
+# Игнорируем всё, что не нужно в контейнере
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+.venv/
+venv/
+ENV/
+.eggs/
+*.egg-info/
+.installed.cfg
+*.egg
+.git
+.gitignore
+README.md
+test_*.py
+.env
+*.session
+*.session-journal
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
