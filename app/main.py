@@ -1,18 +1,14 @@
 from fastapi import FastAPI
-from dotenv import load_dotenv
-import os
-from pathlib import Path
-
-env_path = Path(__file__).parent.parent / ".env"
-load_dotenv(dotenv_path=env_path)
+from app.config import settings
 
 app = FastAPI(title="AI Telegram Post Generator")
+
 
 @app.get("/")
 def root():
     return {
         "status": "ok",
-        "openai_key_set": bool(os.getenv("OPENAI_API_KEY")),
-        "env_loaded_from": str(env_path),
-        "file_exists": env_path.exists()
+        "openai_key_set": bool(settings.OPENAI_API_KEY),
+        "telegram_configured": bool(settings.TELEGRAM_API_ID and settings.TELEGRAM_API_HASH),
+        "db_url_sample": settings.DATABASE_URL[:30] + "...",
     }
