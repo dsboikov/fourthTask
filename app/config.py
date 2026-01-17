@@ -18,10 +18,14 @@ class Settings:
     OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
     OPENAI_MODEL: str = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
 
+    # Определяем, запущены ли мы в Docker
+    IN_DOCKER = os.getenv("IN_DOCKER", "false").lower() == "true"
+
     # Database
-    DATABASE_URL: str = os.getenv(
-        "DATABASE_URL",
-        "postgresql+psycopg://postgres:postgres@localhost:5432/aibot"
+    DATABASE_URL: str = (
+        os.getenv("DATABASE_URL_DOCKER")
+        if IN_DOCKER
+        else os.getenv("DATABASE_URL_LOCAL", "postgresql+psycopg://postgres:postgres@localhost:5432/aibotdb")
     )
 
     # Redis / Celery
