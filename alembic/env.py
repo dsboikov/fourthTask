@@ -1,5 +1,5 @@
 from logging.config import fileConfig
-from sqlalchemy import engine_from_config, pool
+from sqlalchemy import engine_from_config, pool, text
 from alembic import context
 from app.models import Base
 from app.config import settings
@@ -66,8 +66,24 @@ def run_migrations_online() -> None:
     )
 
     with connectable.connect() as connection:
+        # Проверяем, существует ли таблица alembic_version
+        result = connection.execute(text("""SELECT EXISTS (
+            SELECT FROM information_schema.tables WHERE table_name = 'alembic_version')"""))
+        table_exists = result.scalar()
+
+        if not table_exists:
+            # Создаём таблицу вручную, чтобы избежать конфликта с типом
+            connection.execute(text("""
+                CREATE TABLE alembic_version (
+                    version_num VARCHAR(32) NOT NULL
+                )
+            """))
+
         context.configure(
-            connection=connection, target_metadata=target_metadata
+            connection=connection,
+            target_metadata=target_metadata,
+            compare_type=True,
+            compare_server_default=True,
         )
 
         with context.begin_transaction():
