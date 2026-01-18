@@ -1,6 +1,6 @@
 import asyncio
 from telethon import TelegramClient
-from telethon.errors import ChannelInvalidError, SessionPasswordNeededError
+from telethon.errors import ChannelInvalidError
 from datetime import datetime
 from typing import List, Dict
 import logging
@@ -8,6 +8,7 @@ import logging
 from app.config import settings
 
 logger = logging.getLogger(__name__)
+
 
 class TelegramNewsParser:
     def __init__(self):
@@ -22,40 +23,18 @@ class TelegramNewsParser:
             "hahacker_news",
         ]
 
-    async def i_auth(self):
-        try:
-            phone = input('Введите номер телефона (в формате +7XXXXXXXXXX): ').strip()
-            await self.client.send_code_request(phone)
-            code = input('Введите код из Telegram: ').strip()
-            try:
-                await self.client.sign_in(phone, code)
-                me = await self.client.get_me()
-                logger.info(
-                    f'Успешно авторизован как {me.first_name} {me.last_name or ""} (@{me.username or "без username"})')
-            except SessionPasswordNeededError:
-                password = input('Введите пароль двухфакторной аутентификации: ').strip()
-                if not password:
-                    logger.error('Пароль не может быть пустым')
-                    return
-
-                await self.client.sign_in(password=password)
-                me = await self.client.get_me()
-                logger.info(
-                    f'Успешно авторизован как {me.first_name} {me.last_name or ""} (@{me.username or "без username"})')
-        except Exception as e:
-            logger.error(f'Ошибка при авторизации: {e}', exc_info=True)
-        finally:
-            await self.client.disconnect()
+    async def _ensure_authorized(self):
+        """Автоматическое подключение с проверкой авторизации"""
+        await self.client.connect()
+        if not await self.client.is_user_authorized():
+            # В production-режиме это не должно происходить!
+            # Но на случай ошибки — логируем и отключаемся
+            logger.error("Telegram session is not authorized. Run `init_telegram` first!")
+            await self.client.disconnect()  # type: ignore
+            raise RuntimeError("Telegram session not authorized. Please run auth script.")
 
     async def parse_all(self) -> List[Dict]:
-        # Подключаемся вручную
-        await self.client.connect()
-
-        # Если сессия новая — авторизуемся
-        if not await self.client.is_user_authorized():
-            print("⚠️ Требуется авторизация в Telegram!")
-            await self.i_auth()
-            await self.client.start()  # Это блокирует выполнение до завершения авторизации
+        await self._ensure_authorized()
 
         all_news = []
         try:
@@ -69,7 +48,7 @@ class TelegramNewsParser:
                 except Exception as e:
                     logger.error(f"Error parsing @{channel}: {e}")
         finally:
-            await self.client.disconnect()
+            await self.client.disconnect()  # type: ignore
 
         return all_news
 

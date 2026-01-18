@@ -9,3 +9,14 @@ celery_app = Celery(
 
 # Автоматически обнаруживать задачи в app.tasks
 celery_app.autodiscover_tasks(["app"])
+# Периодические задачи
+celery_app.conf.beat_schedule = {
+    "fetch-news-sites": {
+        "task": "app.tasks.fetch_news_from_sites",
+        "schedule": 30 * 60,  # каждые 30 минут
+    },
+    "fetch-news-telegram": {
+        "task": "app.tasks.fetch_news_from_telegram",
+        "schedule": 30 * 60,
+    },
+}
