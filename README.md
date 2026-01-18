@@ -11,3 +11,8 @@
 - публикация через Telethon;
 - панель управления источниками.
 
+
+### Запуск:
+```docker-compose up --build```
+### Авторизация телеграм при первом запуске:
+```docker-compose run --rm init_telegram```
