@@ -46,8 +46,9 @@ services:
       redis:
         condition: service_healthy
     volumes:
-      - .:/app
-    command: uv run uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+      #- .:/app
+      - telegram_sessions:/app
+    command: uv run uvicorn app.main:app --host 0.0.0.0 --port 8000
 
   celery_worker:
     build: .
@@ -67,7 +68,10 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+    volumes:
+      - telegram_sessions:/app
     command: uv run celery -A celery_worker.celery_app worker --loglevel=info
 
 volumes:
   postgres_data:
+  telegram_sessions:
