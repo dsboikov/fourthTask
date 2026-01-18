@@ -50,7 +50,7 @@ async def initialize_telegram_session():
     else:
         print("✅ Сессия уже активна.")
 
-    await client.disconnect()
+    await client.disconnect()  # type: ignore
     return True
 
 

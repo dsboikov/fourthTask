@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Text, DateTime, Boolean, Integer
+from sqlalchemy import Column, String, Text, DateTime, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.ext.declarative import declarative_base
 import uuid
@@ -31,3 +31,17 @@ class NewsItem(Base):
             "published_at": self.published_at.isoformat(),
             "raw_text": self.raw_text
         }
+
+
+class Post(Base):
+    __tablename__ = "posts"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    title = Column(String, nullable=False)
+    content = Column(Text, nullable=False)
+    status = Column(String, default="draft")  # draft, published, failed
+    news_item_id = Column(UUID(as_uuid=True), ForeignKey("news_items.id"), nullable=False)
+    created_at = Column(DateTime, default=datetime.now)
+
+    def __repr__(self):
+        return f"<Post(title='{self.title[:30]}...', status='{self.status}')>"
