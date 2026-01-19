@@ -38,6 +38,8 @@ services:
       - REDIS_URL=${REDIS_URL}
       - CELERY_BROKER_URL=${REDIS_URL}/0
       - CELERY_RESULT_BACKEND=${REDIS_URL}/1
+      - UV_PYTHON_PREFERENCE=only-system
+      - UV_PYTHON_DOWNLOADS=0
     ports:
       - "8000:8000"
     depends_on:
@@ -46,9 +48,14 @@ services:
       redis:
         condition: service_healthy
     volumes:
-      - .:/app
       - telegram_sessions:/app
-    command: uv run uvicorn app.main:app --host 0.0.0.0 --port 8000
+    command: >
+        sh -c "
+          echo '▶ Applying database migrations...' &&
+          alembic upgrade head &&
+          echo '▶ Starting application...' &&
+          uvicorn app.main:app --host 0.0.0.0 --port 8000
+        "
 
   celery_worker:
     build: .
@@ -63,6 +70,8 @@ services:
       - REDIS_URL=${REDIS_URL}
       - CELERY_BROKER_URL=${REDIS_URL}/0
       - CELERY_RESULT_BACKEND=${REDIS_URL}/1
+      - UV_PYTHON_PREFERENCE=only-system
+      - UV_PYTHON_DOWNLOADS=0
     depends_on:
       postgres:
         condition: service_healthy
@@ -70,7 +79,7 @@ services:
         condition: service_healthy
     volumes:
       - telegram_sessions:/app
-    command: uv run celery -A celery_worker.celery_app worker --loglevel=info
+    command: celery -A celery_worker.celery_app worker --loglevel=info
 
   celery_beat:
     build: .
@@ -85,12 +94,14 @@ services:
       - REDIS_URL=${REDIS_URL}
       - CELERY_BROKER_URL=${REDIS_URL}/0
       - CELERY_RESULT_BACKEND=${REDIS_URL}/1
+      - UV_PYTHON_PREFERENCE=only-system
+      - UV_PYTHON_DOWNLOADS=0
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
-    command: uv run celery -A celery_worker.celery_app beat --loglevel=info
+    command: celery -A celery_worker.celery_app beat --loglevel=info
     volumes:
       - telegram_sessions:/app
 
