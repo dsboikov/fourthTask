@@ -1,6 +1,7 @@
 import logging
 import sys
 
+
 def setup_logging():
     """Настраиваем логирование для всего приложения"""
     # Создаём форматтер

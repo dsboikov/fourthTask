@@ -34,6 +34,7 @@ services:
       - TELEGRAM_CHANNEL_USERNAME=${TELEGRAM_CHANNEL_USERNAME}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - OPENAI_MODEL=${OPENAI_MODEL}
+      - OPENAI_PROXY_URL=${OPENAI_PROXY_URL}
       - DATABASE_URL=postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       - REDIS_URL=${REDIS_URL}
       - CELERY_BROKER_URL=${REDIS_URL}/0
@@ -50,12 +51,12 @@ services:
     volumes:
       - telegram_sessions:/app
     command: >
-        sh -c "
-          echo '▶ Applying database migrations...' &&
-          alembic upgrade head &&
-          echo '▶ Starting application...' &&
-          uvicorn app.main:app --host 0.0.0.0 --port 8000
-        "
+      sh -c "
+        echo '▶ Applying database migrations...' &&
+        alembic upgrade head &&
+        echo '▶ Starting application...' &&
+        uvicorn app.main:app --host 0.0.0.0 --port 8000
+      "
 
   celery_worker:
     build: .
@@ -66,6 +67,7 @@ services:
       - TELEGRAM_CHANNEL_USERNAME=${TELEGRAM_CHANNEL_USERNAME}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - OPENAI_MODEL=${OPENAI_MODEL}
+      - OPENAI_PROXY_URL=${OPENAI_PROXY_URL}
       - DATABASE_URL=postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       - REDIS_URL=${REDIS_URL}
       - CELERY_BROKER_URL=${REDIS_URL}/0
@@ -90,6 +92,7 @@ services:
       - TELEGRAM_CHANNEL_USERNAME=${TELEGRAM_CHANNEL_USERNAME}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - OPENAI_MODEL=${OPENAI_MODEL}
+      - OPENAI_PROXY_URL=${OPENAI_PROXY_URL}
       - DATABASE_URL=postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       - REDIS_URL=${REDIS_URL}
       - CELERY_BROKER_URL=${REDIS_URL}/0
@@ -114,6 +117,7 @@ services:
       - TELEGRAM_CHANNEL_USERNAME=${TELEGRAM_CHANNEL_USERNAME}
       - OPENAI_API_KEY=${OPENAI_API_KEY}
       - OPENAI_MODEL=${OPENAI_MODEL}
+      - OPENAI_PROXY_URL=${OPENAI_PROXY_URL}
       - DATABASE_URL=postgresql+psycopg://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
       - REDIS_URL=${REDIS_URL}
       - CELERY_BROKER_URL=${REDIS_URL}/0

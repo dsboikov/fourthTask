@@ -3,6 +3,7 @@ from datetime import datetime
 from typing import Optional
 import uuid
 
+
 class NewsItemBase(BaseModel):
     title: str
     url: Optional[str] = None
@@ -11,13 +12,16 @@ class NewsItemBase(BaseModel):
     published_at: datetime
     raw_text: Optional[str] = None
 
+
 class NewsItemCreate(NewsItemBase):
     pass
+
 
 class NewsItemUpdate(NewsItemBase):
     title: Optional[str] = None
     summary: Optional[str] = None
     raw_text: Optional[str] = None
+
 
 class NewsItemRead(NewsItemBase):
     id: uuid.UUID

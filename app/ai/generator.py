@@ -4,6 +4,7 @@ from app.config import settings
 
 logger = logging.getLogger(__name__)
 
+
 async def generate_post_from_news(news_summary: str) -> dict:
     """
     Генерирует пост для Telegram на основе краткого содержания новости.
@@ -28,9 +29,9 @@ async def generate_post_from_news(news_summary: str) -> dict:
             temperature=0.7,
             max_tokens=500,
         )
-        
+
         raw_text = response.choices[0].message.content.strip()
-        
+
         # Разделяем на заголовок и контент
         parts = raw_text.split('\n\n', 1)
         if len(parts) == 2:
@@ -40,12 +41,12 @@ async def generate_post_from_news(news_summary: str) -> dict:
             lines = raw_text.split('\n', 1)
             title = lines[0]
             content = lines[1] if len(lines) > 1 else raw_text
-        
+
         return {
             "title": title.strip(),
             "content": content.strip()
         }
-        
+
     except Exception as e:
         logger.error(f"Ошибка генерации поста: {e}")
         raise

@@ -19,7 +19,7 @@ class Settings:
     REDIS_URL: str = os.getenv("REDIS_URL", "redis://localhost:6379")
     CELERY_BROKER_URL: str = os.getenv("CELERY_BROKER_URL", f"{REDIS_URL}/0")
     CELERY_RESULT_BACKEND: str = os.getenv("CELERY_RESULT_BACKEND", f"{REDIS_URL}/1")
-
+    OPENAI_PROXY_URL: str = os.getenv("OPENAI_PROXY_URL", "")
 
 # Экземпляр настроек
 settings = Settings()

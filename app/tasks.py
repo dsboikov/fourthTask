@@ -9,6 +9,7 @@ import asyncio
 
 logger = logging.getLogger(__name__)
 
+
 def _save_news_items(news_items: list):
     db = SessionLocal()
     added = 0
@@ -28,6 +29,7 @@ def _save_news_items(news_items: list):
         db.close()
     return added
 
+
 @celery_app.task
 def fetch_news_from_sites():
     parser = NewsParser()
@@ -35,13 +37,15 @@ def fetch_news_from_sites():
     added = _save_news_items(news_items)
     return {"Получено": len(news_items), "Добавлено": added}
 
+
 @celery_app.task
 def fetch_news_from_telegram():
     parser = TelegramNewsParser()
     news_items = parser.run_sync()
     added = _save_news_items(news_items)
     return {"Получено": len(news_items), "Добавлено": added}
-    
+
+
 @celery_app.task
 def generate_posts_for_unprocessed_news():
     """Генерирует посты для всех непроцессированных новостей"""
@@ -49,12 +53,12 @@ def generate_posts_for_unprocessed_news():
     try:
         # Находим новости без постов
         news_items = db.query(NewsItem).outerjoin(Post).filter(Post.id.is_(None)).all()
-        
+
         for news in news_items:
             try:
                 # Генерируем пост
                 result = asyncio.run(generate_post_from_news(news.summary))
-                
+
                 # Сохраняем в БД
                 post = Post(
                     title=result["title"],
@@ -64,12 +68,12 @@ def generate_posts_for_unprocessed_news():
                 db.add(post)
                 db.commit()
                 logger.info(f"Создан пост для новости: {news.title[:50]}...")
-                
+
             except Exception as e:
                 logger.error(f"Не удалось сгенерировать пост для новости {news.id}: {e}")
                 # Можно пометить как failed, но пока просто пропускаем
-                
+
     finally:
         db.close()
-    
+
     return {"processed": len(news_items)}
