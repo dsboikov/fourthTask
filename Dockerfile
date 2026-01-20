@@ -27,5 +27,9 @@ RUN uv pip install --system --no-cache-dir .
 # Копируем остальной код
 COPY . .
 
+# Создаём пользователя без root-прав, а то celery ругается сильно
+RUN useradd --create-home --shell /bin/bash appuser && chown -R appuser:appuser /app
+USER appuser
+
 # НЕ используем uv для запуска - только для установки
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
