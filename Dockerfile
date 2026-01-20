@@ -1,28 +1,35 @@
 FROM python:3.12-slim
 
+# Установка системных зависимостей для бинарных пакетов
+RUN apt-get update && apt-get install -y \
+    gcc \
+    g++ \
+    libpq-dev \
+    python3-dev \
+    build-essential \
+    && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 
-ENV UV_LINK_MODE=copy
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    UV_LINK_MODE=copy
 
 # Устанавливаем uv
 RUN pip install --no-cache-dir uv
 
-# Копируем только то, что нужно для установки зависимостей
-COPY pyproject.toml ./
-COPY uv.lock ./
+# Копируем файлы зависимостей
+COPY pyproject.toml uv.lock ./
 
-# Устанавливаем зависимости
+# Устанавливаем зависимости СИСТЕМНО
 RUN uv pip install --system --no-cache-dir .
 
-# Копируем весь код
+# Копируем остальной код
 COPY . .
 
-# Миграция при старте
-RUN chmod +x /app/entrypoint.sh
-
-# Создаём пользователя без root-прав на всякий пожарный
+# Создаём пользователя без root-прав, а то celery ругается сильно
 RUN useradd --create-home --shell /bin/bash appuser && chown -R appuser:appuser /app
 USER appuser
 
-ENTRYPOINT ["/app/entrypoint.sh"]
-CMD ["uv", "run", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# НЕ используем uv для запуска - только для установки
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

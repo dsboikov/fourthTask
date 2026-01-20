@@ -53,12 +53,7 @@ def run_migrations_offline() -> None:
 
 
 def run_migrations_online() -> None:
-    """Run migrations in 'online' mode.
-
-    In this scenario we need to create an Engine
-    and associate a connection with the context.
-
-    """
+    """Run migrations in 'online' mode."""
     connectable = engine_from_config(
         config.get_section(config.config_ini_section),
         prefix="sqlalchemy.",
@@ -66,19 +61,6 @@ def run_migrations_online() -> None:
     )
 
     with connectable.connect() as connection:
-        # Проверяем, существует ли таблица alembic_version
-        result = connection.execute(text("""SELECT EXISTS (
-            SELECT FROM information_schema.tables WHERE table_name = 'alembic_version')"""))
-        table_exists = result.scalar()
-
-        if not table_exists:
-            # Создаём таблицу вручную, чтобы избежать конфликта с типом
-            connection.execute(text("""
-                CREATE TABLE alembic_version (
-                    version_num VARCHAR(32) NOT NULL
-                )
-            """))
-
         context.configure(
             connection=connection,
             target_metadata=target_metadata,

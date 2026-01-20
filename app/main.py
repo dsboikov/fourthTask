@@ -2,7 +2,9 @@ from fastapi import FastAPI, Depends
 from sqlalchemy import text
 from app.database import get_db
 from app.config import settings
+from app.logging_config import setup_logging
 
+setup_logging()
 app = FastAPI(title="AI Telegram Post Generator")
 
 
