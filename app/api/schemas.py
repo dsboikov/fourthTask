@@ -28,3 +28,28 @@ class NewsItemRead(NewsItemBase):
 
     class Config:
         from_attributes = True  # для SQLAlchemy 2.0+
+
+
+class PostBase(BaseModel):
+    title: str
+    content: str
+    status: Optional[str] = "draft"
+
+
+class PostCreate(PostBase):
+    news_item_id: uuid.UUID
+
+
+class PostUpdate(PostBase):
+    title: Optional[str] = None
+    content: Optional[str] = None
+    status: Optional[str] = None
+
+
+class PostRead(PostBase):
+    id: uuid.UUID
+    news_item_id: uuid.UUID
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
