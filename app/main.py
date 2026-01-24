@@ -35,11 +35,34 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
     auth_check = require_auth(request)
     if auth_check:
         return auth_check
+
     # Получаем статистику
     news_stats = crud.get_news_stats(db)
     posts_stats = crud.get_posts_stats(db)
 
-    # Генерируем HTML
+    # Получаем источники
+    sources = crud.get_news_sources(db, limit=20)
+
+    # Генерируем HTML для таблицы источников
+    sources_html = ""
+    for source in sources:
+        status_badge = "🟢 Активен" if source.is_active else "🔴 Неактивен"
+        sources_html += f"""
+        <tr>
+            <td>{source.id}</td>
+            <td>{source.name}</td>
+            <td>{source.parser_type}</td>
+            <td>{status_badge}</td>
+            <td>
+                <a href="#" onclick="toggleSource({source.id}, {str(source.is_active).lower()}); return false;">
+                    {'Выключить' if source.is_active else 'Включить'}
+                </a>
+                |
+                <a href="/docs#/default/update_news_source_sources__source_id__put" target="_blank">Редактировать</a>
+            </td>
+        </tr>
+        """
+
     html_content = f"""
     <!DOCTYPE html>
     <html>
@@ -55,6 +78,9 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
                         background: #007bff; color: white; text-decoration: none; border-radius: 4px; }}
             .actions a.failed {{ background: #dc3545; }}
             .actions a.draft {{ background: #28a745; }}
+            table {{ width: 100%; border-collapse: collapse; margin-top: 10px; }}
+            th, td {{ border: 1px solid #ddd; padding: 8px; text-align: left; }}
+            th {{ background-color: #f2f2f2; }}
         </style>
     </head>
     <body>
@@ -81,13 +107,33 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
         <div class="card">
             <h3>🚀 Быстрые действия</h3>
             <div class="actions">
-                <a href="/docs" target="_blank">📚 API документация</a>
+                <a href="/docs" target="_blank">📚 API Docs</a>
                 <a href="/posts/?post_status=draft" target="_blank">📄 Черновики</a>
+                <a href="/posts/?post_status=failed" class="failed" target="_blank">❌ Ошибки</a>
                 <a href="#" onclick="publishPosts(); return false;" class="draft">📤 Опубликовать черновики</a>
-                <a href="/posts/?post_status=failed" class="failed" target="_blank">❌ Посты с ошибкой отправки</a>
-                <a href="#" onclick="retryFailed(); return false;" class="failed">
-                    🔄 Повторить отправку постов с ошибкой отправки</a>
+                <a href="#" onclick="retryFailed(); return false;" class="failed">🔄 Повторить ошибки</a>
             </div>
+        </div>
+
+        <div class="card">
+            <h3>📡 Источники новостей ({len(sources)})</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Название</th>
+                        <th>Тип</th>
+                        <th>Статус</th>
+                        <th>Действия</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {sources_html}
+                </tbody>
+            </table>
+            <a href="/docs#/default/create_news_source_sources__post" target="_blank" style="margin-top: 10px; display: inline-block;">
+                ➕ Добавить источник
+            </a>
         </div>
 
         <script>
@@ -95,9 +141,12 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
                 const maxPosts = {settings.MAX_POSTS_PER_PUBLISH};
                 if (confirm(`Опубликовать до ${{maxPosts}} черновиков?`)) {{
                     try {{
-                        const response = await fetch('/publish-posts/', {{ method: 'POST' }});
+                        const response = await fetch('/publish-posts/', {{ 
+                            method: 'POST',
+                            headers: {{ 'Content-Type': 'application/json' }}
+                        }});
                         const result = await response.json();
-                        alert(`Опубликовано: ${{result.published}} постов`);
+                        alert(`Результат: ${{result.message}}`);
                         location.reload();
                     }} catch (error) {{
                         alert('Ошибка публикации: ' + error.message);
@@ -114,6 +163,33 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
                         location.reload();
                     }} catch (error) {{
                         alert('Ошибка: ' + error.message);
+                    }}
+                }}
+            }}
+
+            async function toggleSource(sourceId, isActive) {{
+                const newStatus = !isActive;
+                const action = newStatus ? 'включить' : 'выключить';
+                
+                if (confirm(`Вы уверены, что хотите ${{action}} источник ${{sourceId}}?`)) {{
+                    try {{
+                        const response = await fetch(`/sources/${{sourceId}}/toggle`, {{
+                            method: 'POST',
+                            headers: {{
+                                'Content-Type': 'application/json'
+                            }}
+                        }});
+                        
+                        if (response.ok) {{
+                            const updatedSource = await response.json();
+                            alert(`✅ Источник ${{sourceId}} ${{updatedSource.is_active ? 'включён' : 'выключен'}}`);
+                            location.reload();
+                        }} else {{
+                            const error = await response.json();
+                            alert(`❌ Ошибка: ${{error.detail || 'Неизвестная ошибка'}}`);
+                        }}
+                    }} catch (error) {{
+                        alert(`❌ Ошибка сети: ${{error.message}}`);
                     }}
                 }}
             }}
@@ -255,3 +331,58 @@ def trigger_publish_posts(db: Session = Depends(get_db)):
         "published": min(draft_count, settings.MAX_POSTS_PER_PUBLISH),
         "message": f"Запущена публикация до {settings.MAX_POSTS_PER_PUBLISH} постов"
     }
+
+
+@app.get("/sources/", response_model=list[schemas.NewsSourceRead])
+def read_news_sources(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)):
+    return crud.get_news_sources(db, skip=skip, limit=limit)
+
+
+@app.get("/sources/{source_id}", response_model=schemas.NewsSourceRead)
+def read_news_source(source_id: int, db: Session = Depends(get_db)):
+    source = crud.get_news_source(db, source_id)
+    if not source:
+        raise HTTPException(status_code=404, detail="Источник не найден")
+    return source
+
+
+@app.post("/sources/", response_model=schemas.NewsSourceRead, status_code=status.HTTP_201_CREATED)
+def create_news_source(source: schemas.NewsSourceCreate, db: Session = Depends(get_db)):
+    return crud.create_news_source(db, source)
+
+
+@app.put("/sources/{source_id}", response_model=schemas.NewsSourceRead)
+def update_news_source(source_id: int, source_update: schemas.NewsSourceUpdate, db: Session = Depends(get_db)):
+    source = crud.update_news_source(db, source_id, source_update)
+    if not source:
+        raise HTTPException(status_code=404, detail="Источник не найден")
+    return source
+
+
+@app.delete("/sources/{source_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_news_source(source_id: int, db: Session = Depends(get_db)):
+    success = crud.delete_news_source(db, source_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Источник не найден")
+
+
+@app.post("/sources/{source_id}/toggle", response_model=schemas.NewsSourceRead)
+def toggle_source(
+        source_id: int,
+        request: Request,
+        db: Session = Depends(get_db)
+):
+    # Проверяем авторизацию
+    auth_check = require_auth(request)
+    if auth_check:
+        raise HTTPException(status_code=403, detail="Требуется авторизация")
+
+    source = crud.get_news_source(db, source_id)
+    if not source:
+        raise HTTPException(status_code=404, detail="Источник не найден")
+
+    source.is_active = not source.is_active
+    db.commit()
+    db.refresh(source)
+
+    return source

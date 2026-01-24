@@ -71,3 +71,29 @@ class StatsResponse(BaseModel):
     posts_draft: int
     posts_published: int
     posts_failed: int
+
+
+class NewsSourceBase(BaseModel):
+    name: str
+    url: str
+    parser_type: str
+    is_active: bool = True
+
+
+class NewsSourceCreate(NewsSourceBase):
+    pass
+
+
+class NewsSourceUpdate(BaseModel):
+    name: Optional[str] = None
+    url: Optional[str] = None
+    parser_type: Optional[str] = None
+    is_active: Optional[bool] = None
+
+
+class NewsSourceRead(NewsSourceBase):
+    id: int
+    created_at: datetime
+
+    class Config:
+        from_attributes = True

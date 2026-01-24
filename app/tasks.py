@@ -1,9 +1,10 @@
 from celery_worker import celery_app
+from app.api import crud
 from app.news_parser.sites import NewsParser
 from app.news_parser.telegram import TelegramNewsParser
 from app.database import SessionLocal
 from app.ai.generator import generate_post_from_news
-from app.models import NewsItem, Post
+from app.models import NewsItem, Post, NewsSource
 from telethon import TelegramClient
 from app.config import settings
 import logging
@@ -34,18 +35,36 @@ def _save_news_items(news_items: list):
 
 @celery_app.task
 def fetch_news_from_sites():
-    parser = NewsParser()
-    news_items = parser.parse_all()
-    added = _save_news_items(news_items)
-    return {"Получено": len(news_items), "Добавлено": added}
+    db = SessionLocal()
+    try:
+        parser = NewsParser(db)
+        news_items = parser.parse_all()
+
+        # Сохраняем в БД
+        for item in news_items:
+            crud.create_news_item_if_not_exists(db, item)
+
+        logger.info(f"✅ Сохранено {len(news_items)} новостей из сайтов")
+        return {"fetched": len(news_items)}
+    finally:
+        db.close()
 
 
 @celery_app.task
 def fetch_news_from_telegram():
-    parser = TelegramNewsParser()
-    news_items = parser.run_sync()
-    added = _save_news_items(news_items)
-    return {"Получено": len(news_items), "Добавлено": added}
+    db = SessionLocal()
+    try:
+        parser = TelegramNewsParser(db)
+        news_items = asyncio.run(parser.parse_all())
+
+        # Сохраняем в БД
+        for item in news_items:
+            crud.create_news_item_if_not_exists(db, item)
+
+        logger.info(f"✅ Сохранено {len(news_items)} новостей из Telegram")
+        return {"fetched": len(news_items)}
+    finally:
+        db.close()
 
 
 @celery_app.task

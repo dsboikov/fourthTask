@@ -9,12 +9,12 @@
 + очередь задач;
 + генерация постов с помощью AI;
 + публикация через Telethon;
-- панель управления источниками.
++ панель управления источниками.
 
 ## **Установка**
 - клонировать репозиторий или скачать и разархивировать архив на сервер/локальный компьютер
 ### Запуск:
-```docker-compose up --build```
+```docker-compose build --no-cache```
 ### Авторизация телеграм при первом запуске:
 ```
 docker-compose up -d postgres redis
@@ -22,6 +22,11 @@ docker-compose run --rm init_telegram
 ```
 ### После этого обычный запуск:
 ```docker-compose up```
+
+### Добавить список дефолтных источников для парсинга
+```
+docker-compose exec app uv run python -m scripts.init_sources
+```
 
 ### Мануальный запуск сбора новостей
 ```
@@ -71,3 +76,4 @@ publish_posts_to_telegram.delay()
 
 ### Проверить черновики перед публикацией:
 ```curl "http://localhost:8000/posts/?status=draft"```
+

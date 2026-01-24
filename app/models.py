@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Text, DateTime, ForeignKey
+from sqlalchemy import Column, String, Text, DateTime, ForeignKey, Integer, Boolean
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.ext.declarative import declarative_base
 import uuid
@@ -45,3 +45,14 @@ class Post(Base):
 
     def __repr__(self):
         return f"<Post(title='{self.title[:30]}...', status='{self.status}')>"
+
+
+class NewsSource(Base):
+    __tablename__ = "news_sources"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, unique=True, nullable=False)
+    url = Column(String, nullable=False)
+    is_active = Column(Boolean, default=True)
+    parser_type = Column(String, nullable=False)
+    created_at = Column(DateTime, default=datetime.now)

@@ -1,8 +1,12 @@
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
-from app.models import NewsItem, Post
-from app.api.schemas import NewsItemCreate, NewsItemUpdate, PostCreate, PostUpdate, PostStatus
+from app.models import NewsItem, Post, NewsSource
+from app.api.schemas import NewsItemCreate, NewsItemUpdate, PostCreate, PostUpdate, PostStatus, NewsSourceCreate, \
+    NewsSourceUpdate
 import uuid
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def get_news_item(db: Session, news_id: uuid.UUID):
@@ -19,6 +23,21 @@ def create_news_item(db: Session, news: NewsItemCreate):
     db.commit()
     db.refresh(db_news)
     return db_news
+
+
+def create_news_item_if_not_exists(db: Session, news_data: dict):
+    # Проверяем по URL или заголовку
+    existing = db.query(NewsItem).filter(
+        (NewsItem.url == news_data["url"]) |
+        (NewsItem.title == news_data["title"])
+    ).first()
+
+    if not existing:
+        news_create = NewsItemCreate(**news_data)
+        return create_news_item(db, news_create)
+    else:
+        logger.debug(f"Skipping duplicate: {news_data['title']}")
+        return None
 
 
 def update_news_item(db: Session, news_id: uuid.UUID, news_update: NewsItemUpdate):
@@ -122,3 +141,40 @@ def get_posts_stats(db: Session):
         "published": published,
         "failed": failed
     }
+
+
+def get_news_source(db: Session, source_id: int):
+    return db.query(NewsSource).filter(NewsSource.id == source_id).first()
+
+
+def get_news_sources(db: Session, skip: int = 0, limit: int = 100):
+    return db.query(NewsSource).offset(skip).limit(limit).all()
+
+
+def create_news_source(db: Session, source: NewsSourceCreate):
+    db_source = NewsSource(**source.model_dump())
+    db.add(db_source)
+    db.commit()
+    db.refresh(db_source)
+    return db_source
+
+
+def update_news_source(db: Session, source_id: int, source_update: NewsSourceUpdate):
+    db_source = get_news_source(db, source_id)
+    if not db_source:
+        return None
+    for key, value in source_update.model_dump(exclude_unset=True).items():
+        if value is not None:
+            setattr(db_source, key, value)
+    db.commit()
+    db.refresh(db_source)
+    return db_source
+
+
+def delete_news_source(db: Session, source_id: int):
+    db_source = get_news_source(db, source_id)
+    if not db_source:
+        return False
+    db.delete(db_source)
+    db.commit()
+    return True
