@@ -24,23 +24,29 @@ docker-compose run --rm init_telegram
 ```docker-compose up```
 
 ### Мануальный запуск сбора новостей
-```docker-compose exec app uv run python -c "
+```
+docker-compose exec app uv run python -c "
 from app.tasks import fetch_news_from_sites, fetch_news_from_telegram
 fetch_news_from_sites.delay()
 fetch_news_from_telegram.delay()
-"```
+"
+```
 
 ### Мануальный запуск генерации постов
-```docker-compose exec app uv run python -c "
+```
+docker-compose exec app uv run python -c "
 from app.tasks import generate_posts_for_unprocessed_news
 generate_posts_for_unprocessed_news.delay()
-"```
+"
+```
 
 ### Мануальный запуск публикации в Telegram
-```docker-compose exec app uv run python -c "
+```
+docker-compose exec app uv run python -c "
 from app.tasks import publish_posts_to_telegram
 publish_posts_to_telegram.delay()
-"```
+"
+```
 
 ### Проверка логов celery
 ```docker-compose logs celery_worker```
