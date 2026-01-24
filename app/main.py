@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Request, Depends, HTTPException, status
+from fastapi.openapi.docs import get_swagger_ui_html
 from sqlalchemy import text
 from app.database import get_db
 from app.config import settings
@@ -12,8 +13,21 @@ from app.auth import router as auth_router
 import uuid
 
 setup_logging()
-app = FastAPI(title="AI Telegram Post Generator")
+app = FastAPI(
+    title="AI Telegram Post Generator",
+    docs_url=None,
+    redoc_url=None
+)
 app.include_router(auth_router)
+
+
+@app.get("/docs", include_in_schema=False)
+def protected_docs(request: Request):
+    auth_check = require_auth(request)
+    if auth_check:
+        return auth_check
+    return get_swagger_ui_html(openapi_url="/openapi.json", title="API docs")
+
 
 @app.get("/", response_class=HTMLResponse)
 def dashboard(request: Request, db: Session = Depends(get_db)):
@@ -196,7 +210,10 @@ def read_post(post_id: str, db: Session = Depends(get_db)):
 
 @app.post("/posts/", response_model=schemas.PostRead, status_code=status.HTTP_201_CREATED)
 def create_post(post: schemas.PostCreate, db: Session = Depends(get_db)):
-    return crud.create_post(db, post)
+    try:
+        return crud.create_post(db, post)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @app.put("/posts/{post_id}", response_model=schemas.PostRead)
@@ -233,4 +250,8 @@ def trigger_publish_posts(db: Session = Depends(get_db)):
     # Запускаем задачу
     from app.tasks import publish_posts_to_telegram
     publish_posts_to_telegram.delay()
-    return {"published": draft_count, "message": f"Запущена публикация до {settings.MAX_POSTS_PER_PUBLISH} постов"}
+
+    return {
+        "published": min(draft_count, settings.MAX_POSTS_PER_PUBLISH),
+        "message": f"Запущена публикация до {settings.MAX_POSTS_PER_PUBLISH} постов"
+    }
