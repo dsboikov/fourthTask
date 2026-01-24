@@ -49,7 +49,7 @@ services:
       redis:
         condition: service_healthy
     volumes:
-      - telegram_sessions:/app
+      - ./data/telegram_sessions:/home/appuser/.telegram_sessions
     command: >
       sh -c "
         echo '▶ Applying database migrations...' &&
@@ -80,7 +80,7 @@ services:
       redis:
         condition: service_healthy
     volumes:
-      - telegram_sessions:/app
+      - ./data/telegram_sessions:/home/appuser/.telegram_sessions
     command: celery -A celery_worker.celery_app worker --loglevel=info
 
   celery_beat:
@@ -106,7 +106,7 @@ services:
         condition: service_healthy
     command: celery -A celery_worker.celery_app beat --loglevel=info
     volumes:
-      - telegram_sessions:/app
+      - ./data/telegram_sessions:/home/appuser/.telegram_sessions
 
   init_telegram:
     build: .
@@ -123,11 +123,10 @@ services:
       - CELERY_BROKER_URL=${REDIS_URL}/0
       - CELERY_RESULT_BACKEND=${REDIS_URL}/1
     volumes:
-      - telegram_sessions:/app
+      - ./data/telegram_sessions:/home/appuser/.telegram_sessions
     command: uv run python -m app.telegram.auth
     profiles:
       - init
 
 volumes:
   postgres_data:
-  telegram_sessions:

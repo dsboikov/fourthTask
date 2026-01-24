@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from datetime import datetime
 from typing import Optional
+from enum import Enum
 import uuid
 
 
@@ -30,10 +31,16 @@ class NewsItemRead(NewsItemBase):
         from_attributes = True  # для SQLAlchemy 2.0+
 
 
+class PostStatus(str, Enum):
+    draft = "draft"
+    published = "published"
+    failed = "failed"
+
+
 class PostBase(BaseModel):
     title: str
     content: str
-    status: Optional[str] = "draft"
+    status: PostStatus = PostStatus.draft
 
 
 class PostCreate(PostBase):
@@ -53,3 +60,14 @@ class PostRead(PostBase):
 
     class Config:
         from_attributes = True
+
+
+class StatsResponse(BaseModel):
+    news_total: int
+    news_processed: int
+    news_unprocessed: int
+
+    posts_total: int
+    posts_draft: int
+    posts_published: int
+    posts_failed: int

@@ -82,3 +82,17 @@ class TelegramNewsParser:
     def run_sync(self) -> List[Dict]:
         """Запуск в синхронном контексте из Celery"""
         return asyncio.run(self.parse_all())
+
+    async def publish_post(self, title: str, content: str):
+        """Публикует пост в Telegram-канал"""
+        await self._ensure_authorized()
+
+        # Формируем сообщение
+        message = f"{title}\n\n{content}"
+
+        # Отправляем в канал
+        await self.client.send_message(
+            entity=settings.TELEGRAM_CHANNEL_USERNAME,
+            message=message
+        )
+        logger.info(f"📤 Пост опубликован в канал {settings.TELEGRAM_CHANNEL_USERNAME}")

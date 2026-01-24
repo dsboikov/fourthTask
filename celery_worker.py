@@ -22,4 +22,12 @@ celery_app.conf.beat_schedule = {
         "task": "app.tasks.fetch_news_from_telegram",
         "schedule": 30 * 60,
     },
+    "generate-posts": {
+        "task": "app.tasks.generate_posts_for_unprocessed_news",
+        "schedule": 35 * 60,  # после сбора новостей
+    },
+    "publish-posts": {
+        "task": "app.tasks.publish_posts_to_telegram",
+        "schedule": 40 * 60,  # после генерации
+    },
 }

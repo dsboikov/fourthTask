@@ -4,6 +4,8 @@ from app.news_parser.telegram import TelegramNewsParser
 from app.database import SessionLocal
 from app.ai.generator import generate_post_from_news
 from app.models import NewsItem, Post
+from telethon import TelegramClient
+from app.config import settings
 import logging
 import asyncio
 
@@ -77,3 +79,55 @@ def generate_posts_for_unprocessed_news():
         db.close()
 
     return {"processed": len(news_items)}
+
+
+@celery_app.task
+def publish_posts_to_telegram():
+    """Публикует все посты со статусом 'draft' в Telegram-канал"""
+    db = SessionLocal()
+    try:
+        posts = db.query(Post).filter(Post.status == "draft").limit(settings.MAX_POSTS_PER_PUBLISH).all()
+
+        if not posts:
+            logger.info("Нет постов для публикации")
+            return {"published": 0}
+
+        # Публикуем каждый пост в отдельном asyncio.run()
+        for post in posts:
+            try:
+                # Создаём НОВЫЙ клиент для каждой публикации
+                asyncio.run(publish_single_post(post.title, post.content))
+
+                post.status = "published"
+                db.commit()
+                logger.info(f"✅ Опубликован пост: {post.title[:50]}...")
+
+            except Exception as e:
+                logger.error(f"❌ Ошибка публикации поста {post.id}: {e}")
+                post.status = "failed"
+                db.commit()
+
+    finally:
+        db.close()
+
+    return {"published": len(posts)}
+
+
+async def publish_single_post(title: str, content: str):
+    """Публикует один пост"""
+    client = TelegramClient(
+        settings.TELEGRAM_SESSION_NAME,
+        settings.TELEGRAM_API_ID,
+        settings.TELEGRAM_API_HASH
+    )
+
+    await client.connect()
+    try:
+        message = f"{title}\n\n{content}"
+        await client.send_message(
+            entity=settings.TELEGRAM_CHANNEL_USERNAME,
+            message=message
+        )
+        logger.info(f"📤 Пост опубликован в канал {settings.TELEGRAM_CHANNEL_USERNAME}")
+    finally:
+        await client.disconnect()

@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session
 from app.models import NewsItem, Post
-from app.api.schemas import NewsItemCreate, NewsItemUpdate, PostCreate, PostUpdate
+from app.api.schemas import NewsItemCreate, NewsItemUpdate, PostCreate, PostUpdate, PostStatus
 import uuid
 
 
@@ -76,3 +76,39 @@ def delete_post(db: Session, post_id: uuid.UUID):
     db.delete(db_post)
     db.commit()
     return True
+
+
+def get_posts_by_status(db: Session, status: PostStatus, skip: int = 0, limit: int = 100):
+    return db.query(Post).filter(Post.status == status).offset(skip).limit(limit).all()
+
+
+def retry_failed_posts(db: Session):
+    """Возвращает список ID постов со статусом 'failed'"""
+    posts = db.query(Post).filter(Post.status == PostStatus.failed).all()
+    for post in posts:
+        post.status = PostStatus.draft
+    db.commit()
+    return [post.id for post in posts]
+
+
+def get_news_stats(db: Session):
+    total = db.query(NewsItem).count()
+    processed = db.query(NewsItem).join(Post).count()
+    return {
+        "total": total,
+        "processed": processed,
+        "unprocessed": total - processed
+    }
+
+
+def get_posts_stats(db: Session):
+    total = db.query(Post).count()
+    draft = db.query(Post).filter(Post.status == "draft").count()
+    published = db.query(Post).filter(Post.status == "published").count()
+    failed = db.query(Post).filter(Post.status == "failed").count()
+    return {
+        "total": total,
+        "draft": draft,
+        "published": published,
+        "failed": failed
+    }
