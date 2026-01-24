@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi import FastAPI, Request, Depends, HTTPException, status
 from sqlalchemy import text
 from app.database import get_db
 from app.config import settings
@@ -7,14 +7,20 @@ from sqlalchemy.orm import Session
 from app.api import crud, schemas
 from app.api.schemas import PostStatus
 from fastapi.responses import HTMLResponse
+from app.auth import require_auth
+from app.auth import router as auth_router
 import uuid
 
 setup_logging()
 app = FastAPI(title="AI Telegram Post Generator")
-
+app.include_router(auth_router)
 
 @app.get("/", response_class=HTMLResponse)
-def dashboard(db: Session = Depends(get_db)):
+def dashboard(request: Request, db: Session = Depends(get_db)):
+    # Проверяем аутентификацию
+    auth_check = require_auth(request)
+    if auth_check:
+        return auth_check
     # Получаем статистику
     news_stats = crud.get_news_stats(db)
     posts_stats = crud.get_posts_stats(db)
