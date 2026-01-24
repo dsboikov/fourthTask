@@ -22,6 +22,9 @@ class Settings:
     CELERY_RESULT_BACKEND: str = os.getenv("CELERY_RESULT_BACKEND", f"{REDIS_URL}/1")
     OPENAI_PROXY_URL: str = os.getenv("OPENAI_PROXY_URL", "")
 
+    # Auth
+    ADMIN_API_KEY: str = os.getenv("ADMIN_API_KEY", "")
+
 
 # Экземпляр настроек
 settings = Settings()
