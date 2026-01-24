@@ -43,6 +43,8 @@ def show_login():
 
 @router.post("/login")
 def login(password: str = Form(...)):
+    print(f"Пытаемся залогиниться с паролем: {password}")
+    print(f"А надо {settings.ADMIN_API_KEY}")
     if password == settings.ADMIN_API_KEY:
         response = RedirectResponse(url="/", status_code=303)
         response.set_cookie(
