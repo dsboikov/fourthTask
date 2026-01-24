@@ -1,0 +1,124 @@
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session
+from app.models import NewsItem, Post
+from app.api.schemas import NewsItemCreate, NewsItemUpdate, PostCreate, PostUpdate, PostStatus
+import uuid
+
+
+def get_news_item(db: Session, news_id: uuid.UUID):
+    return db.query(NewsItem).filter(NewsItem.id == news_id).first()
+
+
+def get_news_items(db: Session, skip: int = 0, limit: int = 100):
+    return db.query(NewsItem).offset(skip).limit(limit).all()
+
+
+def create_news_item(db: Session, news: NewsItemCreate):
+    db_news = NewsItem(**news.model_dump())
+    db.add(db_news)
+    db.commit()
+    db.refresh(db_news)
+    return db_news
+
+
+def update_news_item(db: Session, news_id: uuid.UUID, news_update: NewsItemUpdate):
+    db_news = get_news_item(db, news_id)
+    if not db_news:
+        return None
+    for key, value in news_update.model_dump(exclude_unset=True).items():
+        if value is not None:
+            setattr(db_news, key, value)
+    db.commit()
+    db.refresh(db_news)
+    return db_news
+
+
+def delete_news_item(db: Session, news_id: uuid.UUID):
+    db_news = get_news_item(db, news_id)
+    if not db_news:
+        return False
+    db.delete(db_news)
+    db.commit()
+    return True
+
+
+def get_post(db: Session, post_id: uuid.UUID):
+    return db.query(Post).filter(Post.id == post_id).first()
+
+
+def get_posts(db: Session, skip: int = 0, limit: int = 100):
+    return db.query(Post).offset(skip).limit(limit).all()
+
+
+def create_post(db: Session, post: PostCreate):
+    # Проверяем, существует ли news_item
+    news_item = db.query(NewsItem).filter(NewsItem.id == post.news_item_id).first()
+    if not news_item:
+        raise ValueError(f"NewsItem with id {post.news_item_id} not found")
+
+    db_post = Post(**post.model_dump())
+    db.add(db_post)
+    try:
+        db.commit()
+        db.refresh(db_post)
+    except IntegrityError:
+        db.rollback()
+        raise ValueError("Invalid news_item_id")
+    return db_post
+
+
+def update_post(db: Session, post_id: uuid.UUID, post_update: PostUpdate):
+    db_post = get_post(db, post_id)
+    if not db_post:
+        return None
+    for key, value in post_update.model_dump(exclude_unset=True).items():
+        if value is not None:
+            setattr(db_post, key, value)
+    db.commit()
+    db.refresh(db_post)
+    return db_post
+
+
+def delete_post(db: Session, post_id: uuid.UUID):
+    db_post = get_post(db, post_id)
+    if not db_post:
+        return False
+    db.delete(db_post)
+    db.commit()
+    return True
+
+
+def get_posts_by_status(db: Session, status: PostStatus, skip: int = 0, limit: int = 100):
+    return db.query(Post).filter(Post.status == status).offset(skip).limit(limit).all()
+
+
+def retry_failed_posts(db: Session):
+    """Возвращает список ID постов со статусом 'failed'"""
+    posts = db.query(Post).filter(Post.status == PostStatus.failed).all()
+    for post in posts:
+        post.status = PostStatus.draft
+    db.commit()
+    return [post.id for post in posts]
+
+
+def get_news_stats(db: Session):
+    total = db.query(NewsItem).count()
+    processed = db.query(NewsItem).join(Post).count()
+    return {
+        "total": total,
+        "processed": processed,
+        "unprocessed": total - processed
+    }
+
+
+def get_posts_stats(db: Session):
+    total = db.query(Post).count()
+    draft = db.query(Post).filter(Post.status == "draft").count()
+    published = db.query(Post).filter(Post.status == "published").count()
+    failed = db.query(Post).filter(Post.status == "failed").count()
+    return {
+        "total": total,
+        "draft": draft,
+        "published": published,
+        "failed": failed
+    }

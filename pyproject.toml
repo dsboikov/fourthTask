@@ -1,0 +1,23 @@
+[project]
+name = "project-four"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = "~=3.12.0"
+dependencies = [
+    "alembic>=1.18.1",
+    "beautifulsoup4>=4.14.3",
+    "celery>=5.6.2",
+    "fastapi>=0.128.0",
+    "feedparser>=6.0.12",
+    "psycopg[binary]>=3.3.2",
+    "python-dotenv>=1.2.1",
+    "redis>=7.1.0",
+    "sqlalchemy>=2.0.45",
+    "telethon>=1.42.0",
+    "uvicorn>=0.40.0",
+    "openai==1.54.4",
+    "pydantic==2.9.2",
+    "httpx[socks]>=0.27.2",
+    "python-multipart>=0.0.9",
+]
