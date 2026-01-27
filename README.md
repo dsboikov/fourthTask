@@ -5,13 +5,13 @@
 Публикация проходит по расписанию в Telegram-канал, с возможностью ручного управления и мониторинга через API.
 
 ## **Сделано:**
-✅ Настроил Docker-инфраструктуру с PostgreSQL, Redis, Celery
-✅ Реализовал парсинг новостей из RSS и Telegram
-✅ Интегрировал OpenAI с прокси через SSH
-✅ Создал полный CRUD для news_items и posts
-✅ Реализовал публикацию в Telegram
-✅ Добавил гибкое управление источниками через админку
-✅ Защитил всё авторизацией и сделал удобную панель управления
+- ✅ Настроил Docker-инфраструктуру с PostgreSQL, Redis, Celery
+- ✅ Реализовал парсинг новостей из RSS и Telegram
+- ✅ Интегрировал OpenAI с прокси через SSH
+- ✅ Создал полный CRUD для news_items и posts
+- ✅ Реализовал публикацию в Telegram
+- ✅ Добавил гибкое управление источниками через админку
+- ✅ Защитил всё авторизацией и сделал удобную панель управления
 
 ## 4. **Структура проекта**
 ```
@@ -118,7 +118,9 @@ publish_posts_to_telegram.delay()
 ```
 
 ### Проверка логов celery
-```docker-compose logs celery_worker```
+```
+docker-compose logs celery_worker
+```
 
 
 ### Бэкап данных вручную
@@ -133,17 +135,25 @@ docker-compose exec -T postgres psql -U postgres -d aibotdb < backup.sql
 
 
 ## Веб-интерфейс:
-```http://localhost:8000/```
+```
+http://localhost:8000/
+```
 Авторизация проходит по ключу, установленному в .env файле
 
 ### Получить только неудачные посты:
-```curl "http://localhost:8000/posts/?status=failed"```
+```
+curl "http://localhost:8000/posts/?status=failed"
+```
 
 ### Перезапустить неудачные посты:
-```curl -X POST "http://localhost:8000/posts/retry-failed"```
+```
+curl -X POST "http://localhost:8000/posts/retry-failed"
+```
 
 ### Проверить черновики перед публикацией:
-```curl "http://localhost:8000/posts/?status=draft"```
+```
+curl "http://localhost:8000/posts/?status=draft"
+```
 
 
 
