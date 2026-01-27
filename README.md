@@ -71,7 +71,7 @@
 - Для инициализации таблиц БД последовательно выполнить:
 ```
 docker-compose up -d postgres redis
-docker-compose run --rm app uv run alembic revision --autogenerate -m "add news_sources table"
+docker-compose run --rm app uv run alembic revision --autogenerate -m "init"
 docker-compose run --rm app uv run alembic upgrade head
 ```
 - Для авторизации телеграм выполнить ```docker-compose run --rm init_telegram```
