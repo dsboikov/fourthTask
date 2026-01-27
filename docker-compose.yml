@@ -51,6 +51,7 @@ services:
         condition: service_healthy
     volumes:
       - ./data/telegram_sessions:/home/appuser/.telegram_sessions
+      - ./alembic/versions:/app/alembic/versions
     command: >
       sh -c "
         echo '▶ Applying database migrations...' &&

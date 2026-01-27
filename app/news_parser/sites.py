@@ -2,16 +2,22 @@ import feedparser
 from datetime import datetime
 from typing import List, Dict
 import logging
+from sqlalchemy.orm import Session
+from app.models import NewsSource
 
 logger = logging.getLogger(__name__)
 
 
 class NewsParser:
-    def __init__(self):
+    def __init__(self, db: Session):
+        # Получаем только активные RSS/сайтовые источники
         self.sources = {
-            "habr.com": "https://habr.com/ru/rss/articles/?fl=ru",
-            "tproger.ru": "https://tproger.ru/feed/",
-            "vc.ru": "https://vc.ru/rss"
+            source.name: source.url
+            for source in db.query(NewsSource)
+            .filter(
+                NewsSource.is_active == True,
+                NewsSource.parser_type != "telegram"
+            ).all()
         }
 
     def parse_all(self) -> List[Dict]:

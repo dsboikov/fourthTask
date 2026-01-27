@@ -4,24 +4,84 @@
 Учебный проект, реализующий функционал сервиса, который парсит новости с определённого списка сайтов/Telegram-каналов и на их основе создаёт новый. Для рерайтинга использует ИИ. 
 Публикация проходит по расписанию в Telegram-канал, с возможностью ручного управления и мониторинга через API.
 
-### **Интегрированные сервисы:**
-+ парсинг новостей (сайты и Telegram-каналы);
-+ очередь задач;
-+ генерация постов с помощью AI;
-+ публикация через Telethon;
-- панель управления источниками.
+## **Сделано:**
+✅ Настроил Docker-инфраструктуру с PostgreSQL, Redis, Celery
+✅ Реализовал парсинг новостей из RSS и Telegram
+✅ Интегрировал OpenAI с прокси через SSH
+✅ Создал полный CRUD для news_items и posts
+✅ Реализовал публикацию в Telegram
+✅ Добавил гибкое управление источниками через админку
+✅ Защитил всё авторизацией и сделал удобную панель управления
+
+## 4. **Структура проекта**
+```
+/
+├── alembic/
+│   ├── README
+│   ├── env.py
+│   └── script.py.mako
+├── app/
+│   ├── ai/
+│   │   ├── __init__.py
+│   │   ├── generator.py
+│   │   └── openai_client.py
+│   ├── api/
+│   │   ├── __init__.py
+│   │   ├── crud.py
+│   │   ├── endpoints.py
+│   │   └── schemas.py
+│   ├── news_parser/
+│   │   ├── __init__.py
+│   │   ├── sites.py
+│   │   └── telegram.py
+│   ├── telegram/
+│   │   ├── __init__.py
+│   │   ├── auth.py
+│   │   ├── bot.py
+│   │   └── publisher.py
+│   ├── auth.py
+│   ├── config.py
+│   ├── database.py
+│   ├── logging_config.py
+│   ├── main.py
+│   ├── models.py
+│   └── tasks.py
+├── scripts/
+│   ├── __init__.py
+│   └── init_sources.py
+├── .dockerignore
+├── .env
+├── .gitignore
+├── .python-version
+├── Dockerfile
+├── README.md
+├── __init__.py
+├── alembic.ini
+├── celery_worker.py
+├── docker-compose.yml
+├── pyproject.toml
+└── uv.lock
+```
+
 
 ## **Установка**
-- клонировать репозиторий или скачать и разархивировать архив на сервер/локальный компьютер
-### Запуск:
-```docker-compose up --build```
-### Авторизация телеграм при первом запуске:
+- Клонировать репозиторий или скачать и разархивировать архив на сервер/локальный компьютер
+- Создать и наполнить файл .env на основе .env.example
+- Выполнить ```docker-compose build --no-cache```
+- Для инициализации таблиц БД последовательно выполнить:
 ```
 docker-compose up -d postgres redis
-docker-compose run --rm init_telegram
+docker-compose run --rm app uv run alembic revision --autogenerate -m "add news_sources table"
+docker-compose run --rm app uv run alembic upgrade head
 ```
-### После этого обычный запуск:
-```docker-compose up```
+- Для авторизации телеграм выполнить ```docker-compose run --rm init_telegram```
+- Для демо обавить список дефолтных источников для парсинга
+```
+docker-compose exec app uv run python -m scripts.init_sources
+```
+- Выполнить обычный запуск ```docker-compose up```
+- Перейти на http://127.0.0.1:8000/ где можно авторизоваться по ключу, указанному в .env
+
 
 ### Мануальный запуск сбора новостей
 ```
@@ -71,3 +131,6 @@ publish_posts_to_telegram.delay()
 
 ### Проверить черновики перед публикацией:
 ```curl "http://localhost:8000/posts/?status=draft"```
+
+
+

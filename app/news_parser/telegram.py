@@ -3,6 +3,8 @@ from telethon import TelegramClient
 from telethon.errors import ChannelInvalidError
 from datetime import datetime
 from typing import List, Dict
+from app.models import NewsSource
+from sqlalchemy.orm import Session
 import logging
 
 from app.config import settings
@@ -11,16 +13,19 @@ logger = logging.getLogger(__name__)
 
 
 class TelegramNewsParser:
-    def __init__(self):
+    def __init__(self, db: Session):
         self.client = TelegramClient(
             settings.TELEGRAM_SESSION_NAME,
             settings.TELEGRAM_API_ID,
             settings.TELEGRAM_API_HASH
         )
         self.channels = [
-            "webfrl",
-            "expert_mag",
-            "hahacker_news",
+            source.url.lstrip("@")  # Убираем @ если есть
+            for source in db.query(NewsSource)
+            .filter(
+                NewsSource.is_active == True,
+                NewsSource.parser_type == "telegram"
+            ).all()
         ]
 
     async def _ensure_authorized(self):
